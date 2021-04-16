@@ -26,4 +26,9 @@ public class RateDto {
     private BookEntity book;
     private UserEntity userEntity;
 
+    public RateDto(Integer rate, BookEntity book, UserEntity userEntity) {
+        this.rate = rate;
+        this.book = book;
+        this.userEntity = userEntity;
+    }
 }

@@ -49,24 +49,5 @@ public class BookEntity {
             inverseJoinColumns = @JoinColumn(name = "author_id", referencedColumnName = "id"))
     private List<AuthorEntity> authors;
 
-    public void addAuthor(AuthorEntity author) {
-        if (authors == null) {
-            authors = new ArrayList<>();
-        }
-        this.authors.add(author);
-    }
 
-    public void setAverageRate(List<RateEntity> rates) {
-        if (rates.size() != 0) {
-            DecimalFormat df = new DecimalFormat("#.##");
-            this.averageRate = Double.valueOf(df.format(((double) (rates
-                    .stream()
-                    .mapToInt(RateEntity::getRate)
-                    .sum()) / rates.size())));
-        }
-    }
-
-    public void setIsbn(String isbn) {
-        this.isbn = ((isbn.length() == 10) || (isbn.length() == 13)) ? isbn.toUpperCase() : null;
-    }
 }

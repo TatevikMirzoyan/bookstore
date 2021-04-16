@@ -8,13 +8,12 @@ import org.springframework.stereotype.Component;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * @author Tatevik Mirzoyan
  * Created on 01-Apr-21
  */
-@Component
-@ConfigurationProperties(prefix = "file")
 @Entity
 @Table(name = "files")
 @Data
@@ -28,7 +27,6 @@ public class FileEntity {
     private String type;
     private long size;
     private String extension;
-    private LocalDate createdAt;
-    private String uploadDir;
+    private LocalDateTime createdAt;
 
 }

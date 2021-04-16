@@ -37,7 +37,7 @@ public class JwtUserDetailService implements UserDetailsService {
         UserEntity user = getUserEntityByUsername(username.toLowerCase()).orElseThrow(
                 () -> new UsernameNotFoundException(String.format("User with name=%s was not found", username)));
         storeSessionUser(user);
-        return new User(username, user.getPasswordHash(), new ArrayList<>());
+        return new User(username, user.getPassword(), new ArrayList<>());
     }
 
     private void storeSessionUser(UserEntity user) {

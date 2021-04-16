@@ -2,6 +2,7 @@ package bookstore.api.bookstore.service.dto;
 
 import bookstore.api.bookstore.enums.Role;
 import bookstore.api.bookstore.persistence.entity.BookEntity;
+import bookstore.api.bookstore.persistence.entity.FileEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -37,9 +39,37 @@ public class UserDto {
     //                    "and can not contain any white space")
     //    @Size(max = 30, min = 8, message = "The password must contain at least 8 characters and at most 20 characters")
     @NotEmpty(message = "password must not be empty")
+    @JsonIgnore
     private String password;
     private Role role;
     @JsonIgnore
     private List<BookEntity> favoriteBooks;
+    @JsonIgnore
+    private List<FileEntity> images;
 
+    public void addFavoriteBook(BookEntity book) {
+        if (favoriteBooks == null) {
+            favoriteBooks = new ArrayList<>();
+        }
+        this.favoriteBooks.add(book);
+    }
+
+    public void removeFavoriteBook(BookEntity book) {
+        if (favoriteBooks != null) {
+            this.favoriteBooks.remove(book);
+        }
+    }
+
+    public void addImage(FileEntity file) {
+        if (images == null){
+            images = new ArrayList<>();
+        }
+        this.images.add(file);
+    }
+
+    public void removeImage(FileEntity file){
+        if (images != null){
+            this.images.remove(file);
+        }
+    }
 }

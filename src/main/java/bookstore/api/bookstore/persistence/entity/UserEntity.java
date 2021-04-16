@@ -32,7 +32,7 @@ public class UserEntity {
     @Column(nullable = false, unique = true)
     private String email;
     @Column(nullable = false)
-    private String passwordHash;
+    private String password;
     @Enumerated(value = EnumType.STRING)
     private Role role = Role.USER;
 
@@ -42,17 +42,10 @@ public class UserEntity {
             inverseJoinColumns = @JoinColumn(name = "book_id", referencedColumnName = "id"))
     private List<BookEntity> favoriteBooks;
 
-    public void addFavoriteBook(BookEntity book) {
-        if (favoriteBooks == null) {
-            favoriteBooks = new ArrayList<>();
-        }
-        this.favoriteBooks.add(book);
-    }
-
-    public void removeFavoriteBook(BookEntity book) {
-        if (favoriteBooks != null) {
-            this.favoriteBooks.remove(book);
-        }
-    }
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinTable(name = "user_images",
+            joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "file_id", referencedColumnName = "id"))
+    private List<FileEntity> images;
 
 }

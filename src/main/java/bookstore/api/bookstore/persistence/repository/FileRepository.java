@@ -11,11 +11,4 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface FileRepository extends JpaRepository<FileEntity, Long> {
-
-    @Query("Select a.name from FileEntity a where a.id = ?1")
-    String getUploadDocumentPath(Long id);
-
-    @Query("Select a.id from FileEntity a where a.name = :name")
-    Long getDocumentIdByName(String name);
-
 }

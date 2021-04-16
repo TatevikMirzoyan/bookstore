@@ -2,12 +2,15 @@ package bookstore.api.bookstore.service.dto;
 
 import bookstore.api.bookstore.persistence.entity.AuthorEntity;
 import bookstore.api.bookstore.persistence.entity.PublisherEntity;
+import bookstore.api.bookstore.persistence.entity.RateEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.validation.constraints.*;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,5 +39,26 @@ public class BookDto {
     private Double averageRate;
     private List<Long> images;
     private List<AuthorEntity> authors;
+
+    public void addAuthor(AuthorEntity author) {
+        if (authors == null) {
+            authors = new ArrayList<>();
+        }
+        this.authors.add(author);
+    }
+
+    public void setAverageRate(List<RateEntity> rates) {
+        if (rates.size() != 0) {
+            DecimalFormat df = new DecimalFormat("#.##");
+            this.averageRate = Double.valueOf(df.format(((double) (rates
+                    .stream()
+                    .mapToInt(RateEntity::getRate)
+                    .sum()) / rates.size())));
+        }
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = ((isbn.length() == 10) || (isbn.length() == 13)) ? isbn.toUpperCase() : null;
+    }
 
 }

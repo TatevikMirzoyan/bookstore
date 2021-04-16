@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * @author Tatevik Mirzoyan
@@ -19,5 +20,5 @@ public class FileDto {
     private String type;
     private long size;
     private String extension;
-    private LocalDate createdAt;
+    private LocalDateTime createdAt;
 }
