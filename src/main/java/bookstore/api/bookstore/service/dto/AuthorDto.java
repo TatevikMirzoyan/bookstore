@@ -24,4 +24,7 @@ public class AuthorDto {
     @JsonIgnore
     private List<BookEntity> books;
 
+    public AuthorDto(String name) {
+        this.name = name;
+    }
 }

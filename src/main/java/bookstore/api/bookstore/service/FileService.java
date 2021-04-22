@@ -2,26 +2,26 @@ package bookstore.api.bookstore.service;
 
 import bookstore.api.bookstore.exceptions.FileStorageException;
 import bookstore.api.bookstore.exceptions.RecordNotFoundException;
-import bookstore.api.bookstore.persistence.entity.AuthorEntity;
 import bookstore.api.bookstore.persistence.entity.FileEntity;
 import bookstore.api.bookstore.persistence.repository.FileRepository;
-import bookstore.api.bookstore.service.dto.AuthorDto;
-import bookstore.api.bookstore.service.dto.FileDto;
+import bookstore.api.bookstore.service.dto.BookDto;
+import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Objects;
+import java.time.LocalDateTime;
 
 /**
  * @author Tatevik Mirzoyan
@@ -33,14 +33,12 @@ public class FileService {
     private final String uploadDir;
     private final Path fileStorageLocation;
     private final FileRepository fileRepository;
-    private final ModelMapper modelMapper;
 
-    public FileService(@Value("${file.upload-dir}") String uploadDir, FileRepository fileRepository, ModelMapper modelMapper) {
+    public FileService(@Value("${file.upload-dir}") String uploadDir, FileRepository fileRepository) {
         this.uploadDir = uploadDir;
         this.fileRepository = fileRepository;
         this.fileStorageLocation = Paths.get(uploadDir)
                 .toAbsolutePath().normalize();
-        this.modelMapper = modelMapper;
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
@@ -48,24 +46,16 @@ public class FileService {
         }
     }
 
-    public FileDto mapToDto(FileEntity entity) {
-        return modelMapper.map(entity, FileDto.class);
-    }
-
-    public FileEntity mapToEntity(FileDto dto) {
-        return modelMapper.map(dto, FileEntity.class);
-    }
-
     public FileEntity save(FileEntity entity) {
         return fileRepository.save(entity);
     }
 
-    public void storeFile(MultipartFile file, String fileName) {
+    public void storeFile(File file, String fileName) {
         try {
             Path targetLocation = this.fileStorageLocation.resolve(fileName);
-            Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(file.toPath(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException ex) {
-            throw new FileStorageException("Could not store file " + file.getOriginalFilename() + ". Please try again!", ex);
+            throw new FileStorageException("Could not store file " + file.getName() + ". Please try again!", ex);
         }
     }
 
@@ -82,29 +72,44 @@ public class FileService {
         }
     }
 
-    public FileDto getById(Long id) {
-        FileEntity file = fileRepository.findById(id)
+    public FileEntity getById(Long id) {
+        return fileRepository.findById(id)
                 .orElseThrow(() -> new RecordNotFoundException("File with id " + id + " did not exist"));
-        ;
-        return mapToDto(file);
     }
 
 
-//    public Long uploadFileFromPath(String path, String docType) throws IOException {
-//        File temp = new File("image.jpg");
-//        URL url = new URL(path);
-//        try (InputStream is = url.openStream();
-//             OutputStream os = new FileOutputStream(temp)) {
-//            byte[] buffer = new byte[2048];
-//            int bytesCount;
-//            while ((bytesCount = is.read(buffer)) > 0) {
-//                os.write(buffer, 0, bytesCount);
-//            }
-//        }
-//        MultipartFile file = new MockMultipartFile(temp.getName(), temp.getName(),
-//                "images/jpeg", Files.readAllBytes(temp.toPath()));
-//
-//        return getDocumentIdByName(uploadFile(file, docType));
-//    }
+    @Transactional
+    public FileEntity uploadBookImageFromPath(String path) throws IOException {
+        File file = new File(path);
+        URL url = file.toURI().toURL();
+        try (InputStream is = url.openStream();
+             OutputStream os = new FileOutputStream(file)) {
+            byte[] buffer = new byte[2048];
+            int bytesCount;
+            while ((bytesCount = is.read(buffer)) > 0) {
+                os.write(buffer, 0, bytesCount);
+            }
+        } catch (MalformedURLException e) {
+            System.out.println("MalformedURLException :- " + e.getMessage());
 
+        } catch (FileNotFoundException e) {
+            System.out.println("FileNotFoundException :- " + e.getMessage());
+
+        } catch (IOException e) {
+            System.out.println("IOException :- " + e.getMessage());
+        }
+
+        FileEntity newDoc = new FileEntity();
+        newDoc.setExtension(FilenameUtils.getExtension(file.getName()));
+        newDoc.setName("book " + "_image_" + System.currentTimeMillis() + "." + newDoc.getExtension());
+        URLConnection connection = file.toURI().toURL().openConnection();
+        newDoc.setType(connection.getContentType());
+        // TODO: 22-Apr-21 here throws "exception": "java.nio.file.InvalidPathException",
+        //    "message": "Illegal char <:> at index 4: http:\\images.amazon.com
+        newDoc.setSize(Files.size(file.toPath()));
+        newDoc.setCreatedAt(LocalDateTime.now());
+
+        storeFile(file, newDoc.getName());
+        return save(newDoc);
+    }
 }

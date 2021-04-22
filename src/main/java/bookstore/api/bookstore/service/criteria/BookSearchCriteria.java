@@ -18,11 +18,11 @@ import java.math.BigDecimal;
 public class BookSearchCriteria extends SearchCriteria{
     private String title;
     private String genre;
-    private BigDecimal price;
+    private Double minPrice;
     private String isbn;
     private Integer publishedYear;
     private String publisher;
-    private BigDecimal averageRate;
+    private Double minRate;
     private String author;
 
 }

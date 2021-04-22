@@ -25,29 +25,32 @@ public class BookEntity {
     private Long id;
     @Column(nullable = false)
     private String title;
+    @ElementCollection
+    @CollectionTable(name = "book_genre",joinColumns =@JoinColumn(name = "book_id", referencedColumnName = "id"))
+    private List<String> genres;
     @Column(nullable = false)
-    private String genre = "fiction";
-    @Column(nullable = false)
-    @Positive
     private Double price = 0.0;
     @Column(nullable = false, unique = true)
     private String isbn;
     @Column(nullable = false)
     private Integer publishedYear;
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
     private PublisherEntity publisher;
-    @Column(nullable = false)
-    @Positive
     private Double averageRate = 0.0;
-    @ElementCollection
-    @CollectionTable(name = "book_images",joinColumns =@JoinColumn(name = "book_id", referencedColumnName = "id"))
-    private List<Long> imageId;
-
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinTable(name = "book_image",
+            joinColumns = @JoinColumn(name = "book_id", referencedColumnName = "id"),
+            inverseJoinColumns = @JoinColumn(name = "file_id", referencedColumnName = "id"))
+    private List<FileEntity> images;
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(name = "book_author",
             joinColumns = @JoinColumn(name = "book_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "author_id", referencedColumnName = "id"))
     private List<AuthorEntity> authors;
+    @OneToMany(mappedBy = "book",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<RateEntity> rates;
 
+    @Transient
+    private String imageURL;
 
 }

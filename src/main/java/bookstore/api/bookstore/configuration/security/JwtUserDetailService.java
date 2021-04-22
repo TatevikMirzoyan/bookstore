@@ -1,9 +1,10 @@
-package bookstore.api.bookstore.service;
+package bookstore.api.bookstore.configuration.security;
 
 import bookstore.api.bookstore.configuration.security.session.CurrentUser;
 import bookstore.api.bookstore.persistence.entity.UserEntity;
 import bookstore.api.bookstore.persistence.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -12,8 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static bookstore.api.bookstore.configuration.security.session.SessionUser.SESSION_USER_KEY;
 
@@ -37,7 +39,10 @@ public class JwtUserDetailService implements UserDetailsService {
         UserEntity user = getUserEntityByUsername(username.toLowerCase()).orElseThrow(
                 () -> new UsernameNotFoundException(String.format("User with name=%s was not found", username)));
         storeSessionUser(user);
-        return new User(username, user.getPassword(), new ArrayList<>());
+        List<SimpleGrantedAuthority> grantedAuthorities = user.getRoles().stream()
+                .map(role -> new SimpleGrantedAuthority(role.getRoleName()))
+                .collect(Collectors.toList());
+        return new User(username, user.getPassword(), grantedAuthorities);
     }
 
     private void storeSessionUser(UserEntity user) {
@@ -47,7 +52,7 @@ public class JwtUserDetailService implements UserDetailsService {
     }
 
     private Optional<UserEntity> getUserEntityByUsername(String username) {
-        UserEntity user = userRepository.findByUsername(username);
-        return Optional.ofNullable(user);
+        return userRepository.findByUsername(username);
     }
+
 }

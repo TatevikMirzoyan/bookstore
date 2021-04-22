@@ -8,6 +8,7 @@ import bookstore.api.bookstore.service.dto.BookDto;
 import bookstore.api.bookstore.service.dto.UserDto;
 import bookstore.api.bookstore.service.model.wrapper.PageResponseWrapper;
 import bookstore.api.bookstore.service.model.wrapper.UploadFileResponseWrapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,17 +30,13 @@ import static bookstore.api.bookstore.configuration.security.session.SessionUser
  */
 @RestController
 @RequestMapping("users")
+@RequiredArgsConstructor
 @SessionAttributes(SESSION_USER_KEY)
 public class UserController {
 
     private final UserService userService;
 
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
-
     @PostMapping("/registration")
-    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<UserDto> addUser(@Valid @RequestBody UserDto user) {
         UserDto dto = userService.addUser(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
@@ -51,18 +48,9 @@ public class UserController {
     }
 
     @GetMapping(path = "/{id}/favorite-books")
-    public ResponseEntity<PageResponseWrapper<BookDto>> getUserFavoriteBooks(@PathVariable Long
-                                                                                     id, BookSearchCriteria criteria) {
-        PageResponseWrapper<BookDto> result = userService.getUserFavoriteBooks(id, criteria);
+    public ResponseEntity<PageResponseWrapper<BookDto>> getFavoriteBooks(@ModelAttribute(SESSION_USER_KEY) SessionUser sessionUser, BookSearchCriteria criteria) {
+        PageResponseWrapper<BookDto> result = userService.getFavoriteBooks(sessionUser.getId(), criteria);
         return ResponseEntity.ok(result);
-    }
-
-    @PutMapping(path = "/{id}/favorite-books")
-    public ResponseEntity<UserDto> updateFavoriteBooks(@PathVariable Long id,
-                                                       @RequestParam(value = "bookId") Long bookId,
-                                                       @RequestParam(name = "function", defaultValue = "add") String function) {
-        UserDto user = userService.updateFavoriteBooks(id, bookId, function);
-        return ResponseEntity.ok(user);
     }
 
     @GetMapping
@@ -82,7 +70,6 @@ public class UserController {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
-
     @PostMapping("/{id}/images")
     public ResponseEntity<UploadFileResponseWrapper> uploadImage(@PathVariable Long id,
                                                                  @NotNull(message = "The given image must not be null")
@@ -90,19 +77,12 @@ public class UserController {
         return ResponseEntity.ok(userService.uploadImage(id, image));
     }
 
-
     @PostMapping("/upload-csv-file")
+   // @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadUsersFromCSV(@NotEmpty(message = "The given file must not be null or empty")
                                                 @RequestParam("file") MultipartFile file) throws IOException {
-
         int count = userService.uploadUsersFromCSv(file);
         return ResponseEntity.ok().body(Map.of("message", "File is uploaded successfully. Saved " + count + " users."));
     }
 
-    // This is just an example of how to get user session user data
-    // You can use '@ModelAttribute(SESSION_USER_KEY) SessionUser sessionUser' part in any api call where its needed
-    @GetMapping("/session")
-    public ResponseEntity<SessionUser> getSessionUser(@ModelAttribute(SESSION_USER_KEY) SessionUser sessionUser) {
-        return ResponseEntity.ok(sessionUser);
-    }
 }

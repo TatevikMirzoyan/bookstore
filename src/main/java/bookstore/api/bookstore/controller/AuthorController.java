@@ -6,10 +6,13 @@ import bookstore.api.bookstore.service.criteria.SearchCriteria;
 import bookstore.api.bookstore.service.dto.AuthorDto;
 import bookstore.api.bookstore.service.dto.BookDto;
 import bookstore.api.bookstore.service.model.wrapper.PageResponseWrapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.security.PermitAll;
 import javax.validation.Valid;
 
 /**
@@ -18,17 +21,15 @@ import javax.validation.Valid;
  */
 @RestController
 @RequestMapping("authors")
+@RequiredArgsConstructor
 public class AuthorController {
 
     private final AuthorService authorService;
 
-    public AuthorController(AuthorService authorService) {
-        this.authorService = authorService;
-    }
-
     @PostMapping
+    //@PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AuthorDto> addAuthor(@Valid @RequestBody AuthorDto dto) {
-        AuthorDto temp = authorService.addAuthor(dto);
+        AuthorDto temp = authorService.mapToDto(authorService.addAuthor(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(temp);
     }
 

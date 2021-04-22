@@ -1,6 +1,7 @@
 package bookstore.api.bookstore.exceptions;
 
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.ValidationException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,11 +36,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ErrorResponse error = new ErrorResponse("Record Not Found", details);
         return new ResponseEntity(error, HttpStatus.NOT_FOUND);
     }
+
     @ExceptionHandler(FileStorageException.class)
-    public final ResponseEntity<Object> handleDocumentStorageException(FileStorageException ex, WebRequest request) {
+    public final ResponseEntity<Object> handleFileStorageException(FileStorageException ex, WebRequest request) {
         List<String> details = new ArrayList<>();
         details.add(ex.getLocalizedMessage());
-        ErrorResponse error = new ErrorResponse("Document Storage Exception", details);
+        ErrorResponse error = new ErrorResponse("File Storage Exception", details);
         return new ResponseEntity(error, HttpStatus.EXPECTATION_FAILED);
     }
 
@@ -50,11 +55,39 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
     }
 
-    /*@ExceptionHandler(Exception.class)
-    public final ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
+    @ExceptionHandler({ValidationException.class})
+    public ResponseEntity<Object> handleValidationException(ValidationException ex, WebRequest request) {
         List<String> details = new ArrayList<>();
         details.add(ex.getLocalizedMessage());
-        ErrorResponse error = new ErrorResponse("Server Error", details);
-        return new ResponseEntity(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }*/
+        ErrorResponse error = new ErrorResponse("Validation Failed", details);
+        return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({ DataIntegrityViolationException.class })
+    public ResponseEntity<Object> handleBadRequest( DataIntegrityViolationException ex, WebRequest request) {
+        List<String> details = new ArrayList<>();
+        details.add(ex.getLocalizedMessage());
+        ErrorResponse error = new ErrorResponse("Validation Failed", details);
+        return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({ ConstraintViolationException.class })
+    public ResponseEntity<Object> handleConstraintViolation(final ConstraintViolationException ex, final WebRequest request) {
+        logger.info(ex.getClass().getName());
+        List<String> details = new ArrayList<>();
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            details.add(violation.getRootBeanClass().getName() + " " + violation.getPropertyPath() + ": " + violation.getMessage());
+        }
+         ErrorResponse error = new ErrorResponse( ex.getLocalizedMessage(), details);
+        return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
+
+    }
+
+//    @ExceptionHandler(Exception.class)
+//    public final ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
+//        List<String> details = new ArrayList<>();
+//        details.add(ex.getLocalizedMessage());
+//        ErrorResponse error = new ErrorResponse("Server Error", details);
+//        return new ResponseEntity(error, HttpStatus.INTERNAL_SERVER_ERROR);
+//    }
 }

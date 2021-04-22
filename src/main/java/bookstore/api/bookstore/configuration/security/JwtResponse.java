@@ -1,4 +1,4 @@
-package bookstore.api.bookstore.service.model;
+package bookstore.api.bookstore.configuration.security;
 
 import java.io.Serializable;
 

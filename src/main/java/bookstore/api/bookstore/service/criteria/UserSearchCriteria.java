@@ -1,10 +1,12 @@
 package bookstore.api.bookstore.service.criteria;
 
-import bookstore.api.bookstore.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Tatevik Mirzoyan
@@ -15,8 +17,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserSearchCriteria extends SearchCriteria{
+    private String username;
     private String firstName;
     private String lastName;
-    private Role role;
+    private Set<String> roles;
 
 }

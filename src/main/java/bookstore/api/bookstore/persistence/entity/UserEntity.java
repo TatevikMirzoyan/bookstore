@@ -1,13 +1,14 @@
 package bookstore.api.bookstore.persistence.entity;
 
-import bookstore.api.bookstore.enums.Role;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Tatevik Mirzoyan
@@ -29,23 +30,42 @@ public class UserEntity {
     private String firstName;
     @Column(nullable = false, length = 100)
     private String lastName;
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String email;
     @Column(nullable = false)
     private String password;
-    @Enumerated(value = EnumType.STRING)
-    private Role role = Role.USER;
+
+    private LocalDateTime createdAt = LocalDateTime.now();
+
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinTable(name = "user_role",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id"))
+    private Set<RoleEntity> roles;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable(name = "user_favorite_books",
+    @JoinTable(name = "user_favorite_book",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "book_id", referencedColumnName = "id"))
     private List<BookEntity> favoriteBooks;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable(name = "user_images",
+    @JoinTable(name = "user_image",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(name = "file_id", referencedColumnName = "id"))
     private List<FileEntity> images;
 
+
+    public void addFavoriteBook(BookEntity book) {
+        if (favoriteBooks == null) {
+            favoriteBooks = new ArrayList<>();
+        }
+        this.favoriteBooks.add(book);
+    }
+
+    public void removeFavoriteBook(BookEntity book) {
+        if (favoriteBooks != null) {
+            this.favoriteBooks.remove(book);
+        }
+    }
 }

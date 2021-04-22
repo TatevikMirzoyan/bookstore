@@ -1,22 +1,17 @@
 package bookstore.api.bookstore.controller;
 
 import bookstore.api.bookstore.exceptions.FileStorageException;
+import bookstore.api.bookstore.persistence.entity.FileEntity;
 import bookstore.api.bookstore.service.FileService;
-import bookstore.api.bookstore.service.dto.FileDto;
-import bookstore.api.bookstore.service.model.wrapper.UploadFileResponseWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Objects;
 
 /**
  * @author Tatevik Mirzoyan
@@ -36,7 +31,7 @@ public class FileController {
     @GetMapping("/{id}/download")
     public ResponseEntity<Resource> downloadFile(@PathVariable Long id,
                                                  HttpServletRequest request) throws FileNotFoundException {
-        FileDto file = fileService.getById(id);
+        FileEntity file = fileService.getById(id);
         Resource resource = fileService.loadFileAsResource(file.getName());
         try {
             String contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());

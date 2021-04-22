@@ -8,11 +8,14 @@ import bookstore.api.bookstore.service.criteria.SearchCriteria;
 import bookstore.api.bookstore.service.dto.AuthorDto;
 import bookstore.api.bookstore.service.dto.BookDto;
 import bookstore.api.bookstore.service.model.wrapper.PageResponseWrapper;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -20,14 +23,10 @@ import java.util.stream.Collectors;
  * Created on 22-Mar-21
  */
 @Service
+@RequiredArgsConstructor
 public class AuthorService {
     private final AuthorRepository authorRepository;
     private final ModelMapper modelMapper;
-
-    public AuthorService(AuthorRepository authorRepository, ModelMapper modelMapper) {
-        this.authorRepository = authorRepository;
-        this.modelMapper = modelMapper;
-    }
 
     public AuthorDto mapToDto(AuthorEntity entity) {
         return modelMapper.map(entity, AuthorDto.class);
@@ -37,16 +36,18 @@ public class AuthorService {
         return modelMapper.map(dto, AuthorEntity.class);
     }
 
-    public AuthorDto addAuthor(AuthorDto dto) {
+    public AuthorEntity addAuthor(AuthorDto dto) {
         AuthorEntity entity = mapToEntity(dto);
-        entity = authorRepository.save(entity);
-        return mapToDto(entity);
+        return authorRepository.save(entity);
     }
 
     public AuthorDto getById(Long id) {
         AuthorEntity entity = authorRepository.findById(id)
                 .orElseThrow(() -> new RecordNotFoundException("Author with id " + id + " did not exist"));
         return mapToDto(entity);
+    }
+    public Optional<AuthorEntity> getByName(String name) {
+        return authorRepository.findByName(name);
     }
 
     public PageResponseWrapper<BookDto> getAuthorBooks(long id, SearchCriteria criteria) {
@@ -61,6 +62,10 @@ public class AuthorService {
     public PageResponseWrapper<AuthorDto> getAuthors(AuthorSearchCriteria criteria) {
         Page<AuthorDto> authors = authorRepository.findByNameContaining(criteria.getName(), criteria.createPageRequest()).map(this::mapToDto);
         return new PageResponseWrapper<>(authors.getTotalElements(), authors.getTotalPages(), authors.getContent());
+    }
+
+    List<AuthorEntity> findAllAuthors(){
+        return authorRepository.findAllAuthors();
     }
 
 }

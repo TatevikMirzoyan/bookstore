@@ -20,4 +20,7 @@ public class PublisherDto {
     @NotBlank(message = "Publisher name must not be empty")
     private String name;
 
+    public PublisherDto(String name) {
+        this.name = name;
+    }
 }

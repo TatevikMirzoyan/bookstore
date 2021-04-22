@@ -1,6 +1,5 @@
 package bookstore.api.bookstore.service.model.csv;
 
-import bookstore.api.bookstore.enums.Role;
 import bookstore.api.bookstore.persistence.entity.BookEntity;
 import com.opencsv.bean.CsvBindByName;
 import lombok.AllArgsConstructor;
@@ -30,8 +29,6 @@ public class User {
     private String email;
     @CsvBindByName(column = "Password")
     private String password;
-//    @CsvBindByName(column = "role")
-//    private Role role;
 
     private List<BookEntity> favoriteBooks;
 

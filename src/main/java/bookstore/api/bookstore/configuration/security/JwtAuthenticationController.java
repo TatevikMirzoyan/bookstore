@@ -1,16 +1,15 @@
-package bookstore.api.bookstore.controller;
+package bookstore.api.bookstore.configuration.security;
 
-import bookstore.api.bookstore.configuration.security.JwtTokUtil;
-import bookstore.api.bookstore.service.JwtUserDetailService;
-import bookstore.api.bookstore.service.model.JwtRequest;
-import bookstore.api.bookstore.service.model.JwtResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import javax.annotation.security.PermitAll;
 
 /**
  * @author Tatevik Mirzoyan
@@ -33,7 +32,7 @@ public class JwtAuthenticationController {
         this.userDetailsService = userDetailsService;
     }
 
-    @RequestMapping(value = "/authenticate", method = RequestMethod.POST)
+    @PostMapping(value = "/authenticate")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest authenticationRequest) throws Exception {
 
         authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());

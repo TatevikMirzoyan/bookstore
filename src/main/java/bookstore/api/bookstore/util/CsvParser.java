@@ -25,6 +25,9 @@ public class CsvParser<T> {
                     .withType(clazz)
                     .withIgnoreEmptyLine(true)
                     .withThrowExceptions(false)
+                    .withIgnoreQuotations(true)
+                    // for Users import delete this part
+                    .withSeparator(';')
                     .build()
                     .parse();
         } catch (IOException e) {

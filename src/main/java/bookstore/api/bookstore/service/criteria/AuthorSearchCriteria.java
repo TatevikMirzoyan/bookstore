@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthorSearchCriteria extends SearchCriteria{
+public class AuthorSearchCriteria extends SearchCriteria {
     private String name;
 }
