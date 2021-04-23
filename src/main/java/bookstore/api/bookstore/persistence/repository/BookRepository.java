@@ -49,4 +49,8 @@ public interface BookRepository extends JpaRepository<BookEntity, Long> {
 
     @Query(value = "select b.isbn from BookEntity b")
     List<String> findAllBookIsbn();
+
+    @Query(value = "select fb from UserEntity u join u.favoriteBooks fb where u.id = :userId")
+    List<BookEntity> findAllByBookId(Long userId);
+
 }

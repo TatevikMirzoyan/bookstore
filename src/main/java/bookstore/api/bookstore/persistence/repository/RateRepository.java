@@ -14,8 +14,6 @@ import java.util.List;
 @Repository
 public interface RateRepository extends JpaRepository<RateEntity, Long> {
 
-
-    //todo
     @Query(value = "SELECT r FROM RateEntity r where r.book.id = :id")
     List<RateEntity> findAllByBookId(Long id);
 

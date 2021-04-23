@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 
+import javax.validation.ValidationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,6 +38,10 @@ public class AuthorService {
     }
 
     public AuthorEntity addAuthor(AuthorDto dto) {
+        Optional<AuthorEntity> temp = authorRepository.findByName(dto.getName());
+        if (temp.isPresent()) {
+            throw new ValidationException("Author with given name already exists. " + dto.getName());
+        }
         AuthorEntity entity = mapToEntity(dto);
         return authorRepository.save(entity);
     }
@@ -60,12 +65,12 @@ public class AuthorService {
     }
 
     public PageResponseWrapper<AuthorDto> getAuthors(AuthorSearchCriteria criteria) {
-        Page<AuthorDto> authors = authorRepository.findByNameContaining(criteria.getName(), criteria.createPageRequest()).map(this::mapToDto);
+        Page<AuthorDto> authors = authorRepository.findAllWithPagination(criteria.getName(), criteria.createPageRequest()).map(this::mapToDto);
         return new PageResponseWrapper<>(authors.getTotalElements(), authors.getTotalPages(), authors.getContent());
     }
 
     List<AuthorEntity> findAllAuthors(){
-        return authorRepository.findAllAuthors();
+        return authorRepository.findAll();
     }
 
 }

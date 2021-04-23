@@ -54,9 +54,4 @@ public class UserDto {
         this.images.add(file);
     }
 
-    public void removeImage(FileEntity file){
-        if (images != null){
-            this.images.remove(file);
-        }
-    }
 }

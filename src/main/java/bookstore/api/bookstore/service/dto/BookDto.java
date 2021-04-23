@@ -41,75 +41,11 @@ public class BookDto {
     @JsonIgnore
     private List<RateEntity> rates;
 
-    public void addRate(RateEntity rate) {
-        if (rates == null) {
-            rates = new ArrayList<>();
-        }
-        this.rates.add(rate);
-        composeAverageRate(rates);
-    }
-
-    public void removeRate(RateEntity rate) {
-        if (rates != null) {
-            this.rates.remove(rate);
-            composeAverageRate(rates);
-        }
-    }
-
-    public void addGenre(String genre) {
-        if (genres == null) {
-            genres = new ArrayList<>();
-        }
-        this.genres.add(genre);
-    }
-
-    public void removeGenre(String genre) {
-        if (genres != null) {
-            this.genres.remove(genre);
-        }
-    }
-
-    public void addAuthor(AuthorEntity author) {
-        if (authors == null) {
-            authors = new ArrayList<>();
-        }
-        this.authors.add(author);
-    }
-
-    public void removeAuthor(AuthorEntity author) {
-        if (authors != null) {
-            this.authors.remove(author);
-        }
-    }
-
     public void addImage(FileEntity file) {
         if (images == null) {
             images = new ArrayList<>();
         }
         this.images.add(file);
-    }
-
-    public void removeImage(FileEntity file) {
-        if (images != null) {
-            this.images.remove(file);
-        }
-    }
-
-
-    public void composeAverageRate(List<RateEntity> rates) {
-        if (rates != null) {
-            this.rates.addAll(rates);
-            if (this.rates.size() != 0) {
-                DecimalFormat df = new DecimalFormat("#.##");
-                this.averageRate = Double.valueOf(df.format((this.rates.stream()
-                        .mapToDouble(RateEntity::getRate)
-                        .sum() / this.rates.size())));
-            }
-        }else averageRate = 0.0;
-    }
-
-    public void setAverageRate(Double averageRate) {
-        this.averageRate = averageRate;
     }
 
     public void setIsbn(String isbn) {

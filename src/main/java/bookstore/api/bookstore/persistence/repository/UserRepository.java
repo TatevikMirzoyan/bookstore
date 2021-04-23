@@ -20,7 +20,7 @@ import java.util.Set;
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
-    @Query(value = "SELECT u FROM UserEntity u left join u.roles r WHERE " +
+    @Query(value = "SELECT u FROM UserEntity u inner join u.roles r WHERE " +
             " (:firstName is null or u.firstName like concat('%', :firstName, '%')) and " +
             " (:lastName is null or u.lastName like concat('%', :lastName, '%') ) and " +
             " (:username is null or u.username like concat('%', :username, '%') ) and " +

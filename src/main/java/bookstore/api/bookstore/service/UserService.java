@@ -2,6 +2,8 @@ package bookstore.api.bookstore.service;
 
 import bookstore.api.bookstore.exceptions.RecordNotFoundException;
 import bookstore.api.bookstore.persistence.entity.FileEntity;
+import bookstore.api.bookstore.persistence.entity.RoleEntity;
+import bookstore.api.bookstore.persistence.repository.RoleRepository;
 import bookstore.api.bookstore.persistence.repository.UserRepository;
 import bookstore.api.bookstore.persistence.entity.BookEntity;
 import bookstore.api.bookstore.persistence.entity.UserEntity;
@@ -29,9 +31,7 @@ import javax.validation.ValidationException;
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +46,7 @@ public class UserService {
     private final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final ModelMapper modelMapper;
     private final PasswordEncoder bcryptEncoder;
     private final FileService fileService;
@@ -69,6 +70,15 @@ public class UserService {
             throw new ValidationException("User with given username already exists. " + user.getUsername());
         }
         user.setPassword(bcryptEncoder.encode(user.getPassword()));
+        if (user.getRoles() == null) {
+            user.setRoles(Set.of(new RoleEntity("USER")));
+        }
+        user.setRoles(user.getRoles().stream()
+                .map(roleEntity -> {
+                    roleEntity = roleRepository.findByRoleName(roleEntity.getRoleName()).orElse(new RoleEntity(roleEntity.getRoleName()));
+                    return roleEntity;
+                })
+                .collect(Collectors.toSet()));
         UserEntity entity = mapDtoToEntity(user);
         return mapEntityToDto(userRepository.save(entity));
     }
@@ -81,7 +91,7 @@ public class UserService {
 
     public PageResponseWrapper<UserDto> getUsers(UserSearchCriteria criteria) {
         Page<UserEntity> users = userRepository.findAllWithPagination(criteria.getFirstName(), criteria.getLastName(),
-                criteria.getUsername(), criteria.getRoles() , criteria.createPageRequest());
+                criteria.getUsername(), criteria.getRoles(), criteria.createPageRequest());
         Page<UserDto> dtos = users.map(this::mapEntityToDto);
         return new PageResponseWrapper<>(dtos.getTotalElements(), dtos.getTotalPages(), dtos.getContent());
     }
@@ -107,7 +117,7 @@ public class UserService {
     }
 
     @Transactional
-    public UploadFileResponseWrapper uploadImage(Long id, MultipartFile image) {
+    public UploadFileResponseWrapper uploadImage(Long id, MultipartFile image) throws IOException {
         UserDto user = getById(id);
 
         FileEntity newDoc = new FileEntity();
@@ -117,21 +127,23 @@ public class UserService {
         newDoc.setSize(image.getSize());
         newDoc.setCreatedAt(LocalDateTime.now());
 
-        fileService.storeFile(new File(image.getOriginalFilename()), newDoc.getName());
-        FileEntity file = fileService.save(newDoc);
-        user.addImage(file);
+        fileService.storeFile(image, newDoc.getName());
+        FileEntity entity = fileService.save(newDoc);
+        user.addImage(entity);
         updateUser(id, user);
 
         String fileDownloadUri = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/files/")
-                .path(file.getId().toString())
+                .path(entity.getId().toString())
                 .path("/download")
                 .toUriString();
-        return new UploadFileResponseWrapper(file.getName(), fileDownloadUri, file.getType(), file.getSize());
+        return new UploadFileResponseWrapper(entity.getName(), fileDownloadUri, entity.getType(), entity.getSize());
     }
 
     public Integer uploadUsersFromCSv(MultipartFile file) throws IOException {
         int count = 0;
+        Map<String, RoleEntity> roles = new HashMap<>();
+        roleRepository.findAll().forEach(roleEntity -> roles.put(roleEntity.getRoleName(), roleEntity));
         List<User> users = csvService.getEntitiesFromCsv(file, User.class);
         List<UserEntity> entities = users.stream()
                 .map((temp) -> modelMapper.map(temp, UserEntity.class))
@@ -147,6 +159,18 @@ public class UserService {
                 continue;
             }
             user.setPassword(bcryptEncoder.encode(user.getPassword()));
+            if (user.getRoles() == null) {
+                user.setRoles(Set.of(new RoleEntity("USER")));
+            }
+            user.setRoles(user.getRoles().
+                    stream().map(roleEntity -> {
+                if (roles.containsKey(roleEntity.getRoleName())) {
+                    roleEntity = roles.get(roleEntity.getRoleName());
+                } else {
+                    roleEntity = new RoleEntity(roleEntity.getRoleName());
+                }
+                return roleEntity;
+            }).collect(Collectors.toSet()));
             userEntities.add(user);
             usernameList.add(user.getUsername());
             for (int i = 0; i < userEntities.size(); i++) {
@@ -173,13 +197,4 @@ public class UserService {
     }
 
 }
-// Add user role to user and use Authorities on controller level
-// Use JPA queries instead of natives and use correct left/right joins  ---Ok( only Book Repository did not done)
 // Check hibernate logs for my new added and your query
-// I can use session user in rateBook method instead o giving the user id
-// Do not use separate controller service for rate  (Ok)
-// Change User Role from Enum to Entity class (Ok)
-// Do some changing in file splitter class, also change writer.close part (Ok)
-
-//Ask from Anna, about the plural name conventions is only referred to middle classes or The Entity classes
-//        for example "users"   or  "user" ???

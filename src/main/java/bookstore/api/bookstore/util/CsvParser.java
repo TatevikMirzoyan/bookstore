@@ -26,7 +26,7 @@ public class CsvParser<T> {
                     .withIgnoreEmptyLine(true)
                     .withThrowExceptions(false)
                     .withIgnoreQuotations(true)
-                    // for Users import delete this part
+                    // for Users import comment this part
                     .withSeparator(';')
                     .build()
                     .parse();

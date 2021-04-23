@@ -37,7 +37,7 @@ public class UserEntity {
 
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER)
     @JoinTable(name = "user_role",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
@@ -55,17 +55,4 @@ public class UserEntity {
             inverseJoinColumns = @JoinColumn(name = "file_id", referencedColumnName = "id"))
     private List<FileEntity> images;
 
-
-    public void addFavoriteBook(BookEntity book) {
-        if (favoriteBooks == null) {
-            favoriteBooks = new ArrayList<>();
-        }
-        this.favoriteBooks.add(book);
-    }
-
-    public void removeFavoriteBook(BookEntity book) {
-        if (favoriteBooks != null) {
-            this.favoriteBooks.remove(book);
-        }
-    }
 }

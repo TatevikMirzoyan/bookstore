@@ -12,11 +12,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,10 +49,11 @@ public class FileService {
         return fileRepository.save(entity);
     }
 
-    public void storeFile(File file, String fileName) {
+    public void storeFile(MultipartFile file, String fileName) {
         try {
-            Path targetLocation = this.fileStorageLocation.resolve(fileName);
-            Files.copy(file.toPath(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+            String uploadPath = Paths.get(String.join(File.separator, uploadDir, fileName)).normalize().toString();
+            File newFile = new File(uploadPath);
+            file.transferTo(newFile);
         } catch (IOException ex) {
             throw new FileStorageException("Could not store file " + file.getName() + ". Please try again!", ex);
         }
@@ -79,37 +79,33 @@ public class FileService {
 
 
     @Transactional
-    public FileEntity uploadBookImageFromPath(String path) throws IOException {
-        File file = new File(path);
-        URL url = file.toURI().toURL();
+    public FileEntity uploadImageFromURL(String path) throws IOException, URISyntaxException {
+        URL url = new URL(path);
+        String extension = FilenameUtils.getExtension(path);
+        String fileName = "image_" + System.currentTimeMillis() + "." + extension;
+        String targetLocation = this.fileStorageLocation.normalize().toString() + "\\" + fileName;
+        File newFile = new File(targetLocation);
         try (InputStream is = url.openStream();
-             OutputStream os = new FileOutputStream(file)) {
+             OutputStream os = new FileOutputStream(newFile.getPath())) {
             byte[] buffer = new byte[2048];
             int bytesCount;
             while ((bytesCount = is.read(buffer)) > 0) {
                 os.write(buffer, 0, bytesCount);
             }
         } catch (MalformedURLException e) {
-            System.out.println("MalformedURLException :- " + e.getMessage());
-
+            System.out.println("MalformedURLException :-   " + e.getMessage());
         } catch (FileNotFoundException e) {
-            System.out.println("FileNotFoundException :- " + e.getMessage());
-
+            System.out.println("FileNotFoundException :-   " + e.getMessage());
         } catch (IOException e) {
-            System.out.println("IOException :- " + e.getMessage());
+            System.out.println("IOException :-   " + e.getMessage());
         }
-
         FileEntity newDoc = new FileEntity();
-        newDoc.setExtension(FilenameUtils.getExtension(file.getName()));
-        newDoc.setName("book " + "_image_" + System.currentTimeMillis() + "." + newDoc.getExtension());
-        URLConnection connection = file.toURI().toURL().openConnection();
-        newDoc.setType(connection.getContentType());
-        // TODO: 22-Apr-21 here throws "exception": "java.nio.file.InvalidPathException",
-        //    "message": "Illegal char <:> at index 4: http:\\images.amazon.com
-        newDoc.setSize(Files.size(file.toPath()));
-        newDoc.setCreatedAt(LocalDateTime.now());
+        newDoc.setExtension(extension);
+        newDoc.setName(fileName);
 
-        storeFile(file, newDoc.getName());
+        newDoc.setType(Files.probeContentType(newFile.toPath()));
+        newDoc.setSize(newFile.length());
+        newDoc.setCreatedAt(LocalDateTime.now());
         return save(newDoc);
     }
 }

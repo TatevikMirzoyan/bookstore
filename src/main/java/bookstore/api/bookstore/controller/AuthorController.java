@@ -27,7 +27,7 @@ public class AuthorController {
     private final AuthorService authorService;
 
     @PostMapping
-    //@PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AuthorDto> addAuthor(@Valid @RequestBody AuthorDto dto) {
         AuthorDto temp = authorService.mapToDto(authorService.addAuthor(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(temp);

@@ -27,4 +27,7 @@ public class RoleEntity {
     @NotBlank(message = "Role name can not be null or empty")
     private String roleName;
 
+    public RoleEntity(String roleName) {
+        this.roleName = roleName;
+    }
 }

@@ -24,6 +24,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import javax.validation.ValidationException;
 import javax.validation.constraints.NotNull;
 import java.io.*;
+import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,7 +41,6 @@ public class BookService {
     private final Logger logger = LoggerFactory.getLogger(BookService.class);
 
     private final BookRepository bookRepository;
-    private final RateRepository rateRepository;
     private final UserRepository userRepository;
     private final PublisherService publisherService;
     private final AuthorService authorService;
@@ -48,13 +48,12 @@ public class BookService {
     private final FileService fileService;
     private final ModelMapper modelMapper;
 
-    public BookService(@Value("${file.upload-dir}") String uploadDir, BookRepository bookRepository, RateRepository rateRepository,
+    public BookService(@Value("${file.upload-dir}") String uploadDir, BookRepository bookRepository,
                        UserRepository userRepository, PublisherService publisherService,
                        AuthorService authorService, CsvService<Book> csvService, FileService fileService,
                        ModelMapper modelMapper) {
         this.uploadDir = uploadDir;
         this.bookRepository = bookRepository;
-        this.rateRepository = rateRepository;
         this.userRepository = userRepository;
         this.publisherService = publisherService;
         this.authorService = authorService;
@@ -128,12 +127,12 @@ public class BookService {
         BookDto book = getById(id);
         FileEntity newDoc = new FileEntity();
         newDoc.setExtension(FilenameUtils.getExtension(image.getOriginalFilename()));
-        newDoc.setName("book" + id + "_" + System.currentTimeMillis() + "." + newDoc.getExtension());
+        newDoc.setName("book_" + id + "_" + System.currentTimeMillis() + "." + newDoc.getExtension());
         newDoc.setType(image.getContentType());
         newDoc.setSize(image.getSize());
         newDoc.setCreatedAt(LocalDateTime.now());
 
-        fileService.storeFile(new File(image.getOriginalFilename()), newDoc.getName());
+        fileService.storeFile(image, newDoc.getName());
         FileEntity file = fileService.save(newDoc);
         book.addImage(file);
         updateBook(id, book);
@@ -148,20 +147,18 @@ public class BookService {
 
     public void storeImages(List<BookEntity> entities) throws IOException {
         for (BookEntity book : entities) {
-            try{
-             BookDto dto = getByIsbn(book.getIsbn());
-              FileEntity file = fileService.uploadBookImageFromPath(book.getImageURL());
+            try {
+                BookDto dto = getByIsbn(book.getIsbn());
+                FileEntity file = fileService.uploadImageFromURL(book.getImageURL());
                 dto.addImage(file);
                 updateBook(dto.getId(), dto);
-            }catch (RecordNotFoundException e){
+            } catch (RecordNotFoundException | URISyntaxException e) {
                 logger.warn(e.getMessage());
             }
         }
     }
 
-
-    //todo
-    public Integer uploadBooksFromCSv(MultipartFile file) throws IOException {
+    public Integer uploadBooksFromCsv(MultipartFile file) throws IOException {
         int count;
         List<Book> books = csvService.getEntitiesFromCsv(file, Book.class);
         List<AuthorEntity> authorList = authorService.findAllAuthors();
@@ -214,7 +211,6 @@ public class BookService {
             }
             for (int i = 0; i < bookList.size(); i++) {
                 if (i % BATCH_SIZE == 0 && i > 0) {
-                    System.out.println("hello from batch");
                     saveAll(bookList);
                     count += bookList.size();
                     bookList.clear();
@@ -222,7 +218,6 @@ public class BookService {
             }
         }
         if (bookList.size() > 0) {
-            System.out.println("hello from batch 2");
             saveAll(bookList);
             count += bookList.size();
             bookList.clear();
@@ -247,24 +242,37 @@ public class BookService {
     }
 
     @Transactional
-    public void rateBook(Long userId, Long bookId, Integer number) {
-        UserEntity user = userRepository.findById(userId).orElseThrow(() -> new RecordNotFoundException("User with id " + userId + " did not exist"));
-        BookDto book = getById(bookId);
-        RateEntity rate = new RateEntity(mapToEntity(book), number, user);
-        rate = rateRepository.save(rate);
-        book.addRate(rate);
-        updateBook(bookId, book);
+    public void rateBook(String username, Long bookId, Integer number) {
+        UserEntity user = userRepository.findByUsername(username).orElseThrow(() -> new RecordNotFoundException("User with username " + username + " did not exist"));
+        BookEntity book = bookRepository.findById(bookId).orElseThrow(() -> new RecordNotFoundException("Book with id " + bookId + " did not exist"));
+        RateEntity rate = new RateEntity(book, number, user);
+        book.getRates().add(rate);
+        book.setRates(book.getRates());
+        book.setAverageRate(book.composeAverageRate(book.getRates()));
+        bookRepository.save(book);
     }
 
-    public void updateFavoriteBooks(Long userId, Long bookId, String function) {
-        UserEntity user = userRepository.findById(userId).orElseThrow(() -> new RecordNotFoundException("User with id " + userId + " did not exist"));
+    public String updateFavoriteBooks(String username, Long bookId, String function) {
+        String result = null;
+        UserEntity user = userRepository.findByUsername(username).orElseThrow(() -> new RecordNotFoundException("User with username " + username + " did not exist"));
         BookEntity book = bookRepository.findById(bookId).orElseThrow(() -> new RecordNotFoundException("Book with id " + bookId + " did not exist"));
         if (function.equalsIgnoreCase("add")) {
-            user.addFavoriteBook(book);
+            System.out.println();
+            if (!user.getFavoriteBooks().contains(book)) {
+                user.getFavoriteBooks().add(book);
+                user.setFavoriteBooks(user.getFavoriteBooks());
+                userRepository.save(user);
+                result = "The Book is added into User favorite books list successfully.";
+            }else result = "The Book is already in User favorite books list.";
         } else if (function.equalsIgnoreCase("remove")) {
-            user.removeFavoriteBook(book);
+            if (user.getFavoriteBooks() != null && user.getFavoriteBooks().contains(book)) {
+                user.getFavoriteBooks().remove(book);
+                user.setFavoriteBooks(user.getFavoriteBooks());
+                userRepository.save(user);
+                result = "The Book is removed from User favorite books list successfully.";
+            }else result = "The user favorite books is empty, or did not contain this book";
         }
-        userRepository.save(user);
+        return result;
     }
 
 

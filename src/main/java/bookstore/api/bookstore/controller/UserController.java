@@ -73,16 +73,16 @@ public class UserController {
     @PostMapping("/{id}/images")
     public ResponseEntity<UploadFileResponseWrapper> uploadImage(@PathVariable Long id,
                                                                  @NotNull(message = "The given image must not be null")
-                                                                 @RequestParam("image") MultipartFile image) {
+                                                                 @RequestParam("image") MultipartFile image) throws IOException {
         return ResponseEntity.ok(userService.uploadImage(id, image));
     }
 
     @PostMapping("/upload-csv-file")
-   // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadUsersFromCSV(@NotEmpty(message = "The given file must not be null or empty")
                                                 @RequestParam("file") MultipartFile file) throws IOException {
-        int count = userService.uploadUsersFromCSv(file);
+
+        Integer count = userService.uploadUsersFromCSv(file);
         return ResponseEntity.ok().body(Map.of("message", "File is uploaded successfully. Saved " + count + " users."));
     }
-
 }

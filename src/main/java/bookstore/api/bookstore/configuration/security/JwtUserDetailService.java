@@ -1,9 +1,12 @@
 package bookstore.api.bookstore.configuration.security;
 
 import bookstore.api.bookstore.configuration.security.session.CurrentUser;
+import bookstore.api.bookstore.persistence.entity.RoleEntity;
 import bookstore.api.bookstore.persistence.entity.UserEntity;
 import bookstore.api.bookstore.persistence.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -39,10 +43,15 @@ public class JwtUserDetailService implements UserDetailsService {
         UserEntity user = getUserEntityByUsername(username.toLowerCase()).orElseThrow(
                 () -> new UsernameNotFoundException(String.format("User with name=%s was not found", username)));
         storeSessionUser(user);
-        List<SimpleGrantedAuthority> grantedAuthorities = user.getRoles().stream()
-                .map(role -> new SimpleGrantedAuthority(role.getRoleName()))
+        return new User(username, user.getPassword(), getAuthorities(user));
+    }
+
+    private static Collection<? extends GrantedAuthority> getAuthorities(UserEntity user) {
+        return user.getRoles().stream()
+                .map((roleEntity -> "ROLE_" + roleEntity.getRoleName()))
+                .collect(Collectors.toList()).stream()
+                .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
-        return new User(username, user.getPassword(), grantedAuthorities);
     }
 
     private void storeSessionUser(UserEntity user) {
