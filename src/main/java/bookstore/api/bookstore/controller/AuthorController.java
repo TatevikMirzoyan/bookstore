@@ -27,7 +27,7 @@ public class AuthorController {
     private final AuthorService authorService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<AuthorDto> addAuthor(@Valid @RequestBody AuthorDto dto) {
         AuthorDto temp = authorService.mapToDto(authorService.addAuthor(dto));
         return ResponseEntity.status(HttpStatus.CREATED).body(temp);
@@ -39,9 +39,8 @@ public class AuthorController {
     }
 
     @GetMapping(path = "/{id}/books")
-    public ResponseEntity<PageResponseWrapper<BookDto>> getAuthorBooks(@PathVariable Long id,
-                                                                       SearchCriteria criteria) {
-            return ResponseEntity.ok(authorService.getAuthorBooks(id, criteria));
+    public ResponseEntity<PageResponseWrapper<BookDto>> getAuthorBooks(@PathVariable Long id, SearchCriteria criteria) {
+        return ResponseEntity.ok(authorService.getAuthorBooks(id, criteria));
     }
 
     @GetMapping
