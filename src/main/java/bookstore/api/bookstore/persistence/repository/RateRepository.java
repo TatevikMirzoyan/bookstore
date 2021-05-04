@@ -13,14 +13,7 @@ import java.util.List;
  */
 @Repository
 public interface RateRepository extends JpaRepository<RateEntity, Long> {
-
-    @Query(value = "SELECT r FROM RateEntity r where r.book.id = :id")
-    List<RateEntity> findAllByBookId(Long id);
-
     @Query(value = "SELECT r FROM RateEntity r INNER JOIN r.book b where b.id = :id")
-    List<RateEntity> findAllByBookId1(Long id);
-
-    @Query(value = "SELECT r FROM RateEntity r where r.user.id = :id")
-    List<RateEntity> findAllByUserId(Long id);
+    List<RateEntity> findAllByBookId(Long id);
 
 }

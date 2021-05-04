@@ -1,4 +1,4 @@
-package bookstore.api.bookstore.exceptions;
+package bookstore.api.bookstore.service.model.wrapper;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,11 +12,11 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ErrorResponse {
+public class ErrorResponseWrapper {
     private String message;
     private List<String> details;
 
-    public ErrorResponse(String message, List<String> details) {
+    public ErrorResponseWrapper(String message, List<String> details) {
         super();
         this.message = message;
         this.details = details;

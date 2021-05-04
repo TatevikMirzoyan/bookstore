@@ -78,10 +78,11 @@ public class UserController {
     }
 
     @PostMapping("/upload-csv-file")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> uploadUsersFromCSV(@NotEmpty(message = "The given file must not be null or empty")
-                                                @RequestParam("file") MultipartFile file) throws IOException {
-
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<?> uploadUsersFromCSV(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "File must not be empty"));
+        }
         Integer count = userService.uploadUsersFromCSv(file);
         return ResponseEntity.ok().body(Map.of("message", "File is uploaded successfully. Saved " + count + " users."));
     }

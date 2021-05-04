@@ -1,8 +1,6 @@
 package bookstore.api.bookstore.persistence.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.Positive;
@@ -17,7 +15,8 @@ import java.util.stream.Collectors;
  */
 @Entity
 @Table(name = "books")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookEntity {
@@ -67,5 +66,19 @@ public class BookEntity {
         return 0.0;
     }
 
-
+    @Override
+    public String toString() {
+        return "BookEntity{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", genres=" + genres +
+                ", price=" + price +
+                ", isbn='" + isbn + '\'' +
+                ", publishedYear=" + publishedYear +
+                ", publisher=" + publisher +
+                ", averageRate=" + averageRate +
+                ", authors=" + authors +
+                ", rates=" + rates +
+                '}';
+    }
 }

@@ -8,6 +8,7 @@ import bookstore.api.bookstore.persistence.repository.UserRepository;
 import bookstore.api.bookstore.service.criteria.BookSearchCriteria;
 import bookstore.api.bookstore.service.dto.*;
 import bookstore.api.bookstore.service.model.csv.Book;
+import bookstore.api.bookstore.service.model.csv.Rate;
 import bookstore.api.bookstore.service.model.wrapper.PageResponseWrapper;
 import bookstore.api.bookstore.service.model.wrapper.UploadFileResponseWrapper;
 import org.apache.commons.io.FilenameUtils;
@@ -27,6 +28,7 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -42,22 +44,26 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final RateRepository rateRepository;
     private final PublisherService publisherService;
     private final AuthorService authorService;
     private final CsvService<Book> csvService;
+    private final CsvService<Rate> rateCsvService;
     private final FileService fileService;
     private final ModelMapper modelMapper;
 
     public BookService(@Value("${file.upload-dir}") String uploadDir, BookRepository bookRepository,
-                       UserRepository userRepository, PublisherService publisherService,
-                       AuthorService authorService, CsvService<Book> csvService, FileService fileService,
+                       UserRepository userRepository, RateRepository rateRepository, PublisherService publisherService,
+                       AuthorService authorService, CsvService<Book> csvService, CsvService<Rate> rateCsvService, FileService fileService,
                        ModelMapper modelMapper) {
         this.uploadDir = uploadDir;
         this.bookRepository = bookRepository;
         this.userRepository = userRepository;
+        this.rateRepository = rateRepository;
         this.publisherService = publisherService;
         this.authorService = authorService;
         this.csvService = csvService;
+        this.rateCsvService = rateCsvService;
         this.fileService = fileService;
         this.modelMapper = modelMapper;
     }
@@ -86,14 +92,14 @@ public class BookService {
     public BookDto addBook(BookDto dto) {
         if (dto.getAuthors() != null) {
             dto.setAuthors(dto.getAuthors().stream().map((author -> {
-                author = authorService.getByName(author.getName()).orElse(new AuthorEntity(author.getName()));
+                author = authorService.getByName(author.getName().toUpperCase()).orElse(new AuthorEntity(author.getName().toUpperCase()));
                 return author;
             })).collect(Collectors.toList()));
         }
         PublisherEntity publisher = dto.getPublisher();
         if (publisher != null) {
-            publisher = publisherService.getByName(publisher.getName()).orElse(
-                    new PublisherEntity(publisher.getName()));
+            publisher = publisherService.getByName(publisher.getName().toUpperCase()).orElse(
+                    new PublisherEntity(publisher.getName().toUpperCase()));
             dto.setPublisher(publisher);
         }
         if (dto.getPrice() == null) {
@@ -149,9 +155,11 @@ public class BookService {
         for (BookEntity book : entities) {
             try {
                 BookDto dto = getByIsbn(book.getIsbn());
-                FileEntity file = fileService.uploadImageFromURL(book.getImageURL());
-                dto.addImage(file);
-                updateBook(dto.getId(), dto);
+                if (dto.getImages() == null || dto.getImages().isEmpty()) {
+                    FileEntity file = fileService.uploadImageFromURL(book.getImageURL());
+                    dto.addImage(file);
+                    updateBook(dto.getId(), dto);
+                }
             } catch (RecordNotFoundException | URISyntaxException e) {
                 logger.warn(e.getMessage());
             }
@@ -164,36 +172,44 @@ public class BookService {
         List<AuthorEntity> authorList = authorService.findAllAuthors();
         Map<String, AuthorEntity> authorMap = new HashMap<>();
         Map<String, PublisherEntity> publisherMup = new HashMap<>();
-        authorList.forEach((authorEntity -> authorMap.put(authorEntity.getName(), authorEntity)));
+        authorList.forEach((authorEntity -> authorMap.put(authorEntity.getName().toUpperCase(), authorEntity)));
         List<PublisherEntity> publisherList = publisherService.findAllPublishers();
-        publisherList.forEach((publisherEntity -> publisherMup.put(publisherEntity.getName(), publisherEntity)));
+        publisherList.forEach((publisherEntity -> publisherMup.put(publisherEntity.getName().toUpperCase(), publisherEntity)));
         List<BookEntity> entities = books.stream()
                 .map((temp) -> {
                     BookEntity book = modelMapper.map(temp, BookEntity.class);
-                    book.setAuthors(temp.getAuthors().stream()
-                            .map((item) -> {
-                                AuthorEntity author;
-                                if (authorMap.containsKey(item)) {
-                                    author = authorMap.get(item);
-                                } else {
-                                    author = authorService.addAuthor(new AuthorDto(item));
-                                    authorMap.put(item, author);
-                                }
-                                return author;
-                            }).collect(Collectors.toList()));
-                    PublisherEntity publisher;
-                    if (publisherMup.containsKey(temp.getPublisher())) {
-                        publisher = publisherMup.get(temp.getPublisher());
-                    } else {
-                        publisher = publisherService.addPublisher(new PublisherDto(temp.getPublisher()));
-                        publisherMup.put(temp.getPublisher(), publisher);
-                    }
-                    book.setPublisher(publisher);
+                    book.setAuthors(getAuthorList(temp.getAuthors(), authorMap));
+                    book.setPublisher(getPublisher(temp.getPublisher(), publisherMup));
                     return book;
                 }).collect(Collectors.toList());
         count = batchSave(entities);
         storeImages(entities);
         return count;
+    }
+
+    private List<AuthorEntity> getAuthorList(List<String> authors, Map<String, AuthorEntity> authorMap) {
+        return authors.stream()
+                .map((authorName) -> {
+                    AuthorEntity author;
+                    if (authorMap.containsKey(authorName.toUpperCase())) {
+                        author = authorMap.get(authorName.toUpperCase());
+                    } else {
+                        author = authorService.addAuthor(new AuthorDto(authorName.toUpperCase()));
+                        authorMap.put(authorName.toUpperCase(), author);
+                    }
+                    return author;
+                }).collect(Collectors.toList());
+    }
+
+    private PublisherEntity getPublisher(String publisher, Map<String, PublisherEntity> publisherMup) {
+        PublisherEntity entity;
+        if (publisherMup.containsKey(publisher.toUpperCase())) {
+            entity = publisherMup.get(publisher.toUpperCase());
+        } else {
+            entity = publisherService.addPublisher(new PublisherDto(publisher.toUpperCase()));
+            publisherMup.put(publisher.toUpperCase(), entity);
+        }
+        return entity;
     }
 
     private Integer batchSave(List<BookEntity> list) {
@@ -206,7 +222,7 @@ public class BookService {
                 isValid(book, bookTitleList, bookIsbnList);
                 bookList.add(book);
             } catch (ValidationException e) {
-                logger.warn(e.getMessage());
+                //   logger.warn(e.getMessage());
                 continue;
             }
             for (int i = 0; i < bookList.size(); i++) {
@@ -242,8 +258,8 @@ public class BookService {
     }
 
     @Transactional
-    public void rateBook(String username, Long bookId, Integer number) {
-        UserEntity user = userRepository.findByUsername(username).orElseThrow(() -> new RecordNotFoundException("User with username " + username + " did not exist"));
+    public void rateBook(Long id, Long bookId, Integer number) {
+        UserEntity user = userRepository.findById(id).orElseThrow(() -> new RecordNotFoundException("User with id " + id + " did not exist"));
         BookEntity book = bookRepository.findById(bookId).orElseThrow(() -> new RecordNotFoundException("Book with id " + bookId + " did not exist"));
         RateEntity rate = new RateEntity(book, number, user);
         book.getRates().add(rate);
@@ -252,28 +268,60 @@ public class BookService {
         bookRepository.save(book);
     }
 
-    public String updateFavoriteBooks(String username, Long bookId, String function) {
+    @Transactional
+    public String updateFavoriteBooks(Long userId, Long bookId, String function) {
         String result = null;
-        UserEntity user = userRepository.findByUsername(username).orElseThrow(() -> new RecordNotFoundException("User with username " + username + " did not exist"));
+        UserEntity user = userRepository.findById(userId).orElseThrow(() -> new RecordNotFoundException("User with id " + userId + " did not exist"));
         BookEntity book = bookRepository.findById(bookId).orElseThrow(() -> new RecordNotFoundException("Book with id " + bookId + " did not exist"));
         if (function.equalsIgnoreCase("add")) {
-            System.out.println();
             if (!user.getFavoriteBooks().contains(book)) {
                 user.getFavoriteBooks().add(book);
                 user.setFavoriteBooks(user.getFavoriteBooks());
                 userRepository.save(user);
                 result = "The Book is added into User favorite books list successfully.";
-            }else result = "The Book is already in User favorite books list.";
+            } else result = "The Book is already in User favorite books list.";
         } else if (function.equalsIgnoreCase("remove")) {
             if (user.getFavoriteBooks() != null && user.getFavoriteBooks().contains(book)) {
                 user.getFavoriteBooks().remove(book);
                 user.setFavoriteBooks(user.getFavoriteBooks());
                 userRepository.save(user);
                 result = "The Book is removed from User favorite books list successfully.";
-            }else result = "The user favorite books is empty, or did not contain this book";
+            } else result = "The user favorite books is empty, or did not contain this book";
         }
         return result;
     }
 
+    public Integer uploadBooksRatesFromCsv(MultipartFile file) throws IOException {
+        AtomicInteger count = new AtomicInteger();
+        List<Rate> rates = rateCsvService.getEntitiesFromCsv(file, Rate.class);
+        List<RateEntity> entities = rates.stream()
+                .map(rate -> {
+                    try {
+                        UserEntity user = userRepository.findById(rate.getUserId())
+                                .orElseThrow(() -> new RecordNotFoundException("User with given Id " + rate.getUserId() + " did not exist."));
+                        BookEntity book = bookRepository.findByIsbn(rate.getIsbn())
+                                .orElseThrow(() -> new RecordNotFoundException("Book with given ISBN " + rate.getIsbn() + " did not exist."));
+                        return new RateEntity(book, rate.getRate(), user);
+                    } catch (RecordNotFoundException e) {
+                        logger.warn(e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        entities.forEach(rateEntity -> {
+            BookEntity book = rateEntity.getBook();
+            book.getRates().add(rateEntity);
+            book.setRates(book.getRates());
+            book.setAverageRate(book.composeAverageRate(book.getRates()));
+            bookRepository.save(book);
+            count.getAndIncrement();
+        });
+        return count.get();
+    }
 
+    public Object getRates(Long id) {
+        List<RateEntity> rates = rateRepository.findAllByBookId(id);
+        return (rates == null) || (rates.size() == 0) ? "The Book is not rated yet." : rates.stream().mapToInt((RateEntity::getRate));
+    }
 }

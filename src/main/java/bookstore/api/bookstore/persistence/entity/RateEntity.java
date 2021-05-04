@@ -1,12 +1,11 @@
 package bookstore.api.bookstore.persistence.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
 
 /**
  * @author Tatevik Mirzoyan
@@ -14,19 +13,20 @@ import javax.validation.constraints.Positive;
  */
 @Entity
 @Table(name = "rates")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class RateEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     private BookEntity book;
     @Max(value = 10)
-    @Positive
+    @PositiveOrZero
     private Integer rate;
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER)
     private UserEntity user;
 
     public RateEntity(BookEntity book, Integer rate, UserEntity user) {
@@ -35,4 +35,13 @@ public class RateEntity {
         this.user = user;
     }
 
+    @Override
+    public String toString() {
+        return "RateEntity{" +
+                "id=" + id +
+                ", book=" + book +
+                ", rate=" + rate +
+                ", user=" + user +
+                '}';
+    }
 }

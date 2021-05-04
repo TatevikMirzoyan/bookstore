@@ -34,7 +34,7 @@ public class BookController {
     private final BookService bookService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<BookDto> addBook(@Valid @RequestBody BookDto dto) {
         BookDto book = bookService.addBook(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(book);
@@ -46,7 +46,7 @@ public class BookController {
     }
 
     @PutMapping(path = "/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','EDITOR')")
+    @PreAuthorize("hasAnyAuthority('ADMIN','EDITOR')")
     public ResponseEntity<BookDto> updateBook(@PathVariable Long id, @Valid @RequestBody BookDto dto) {
         BookDto book = bookService.updateBook(id, dto);
         return ResponseEntity.ok(book);
@@ -60,33 +60,52 @@ public class BookController {
     @PostMapping("/{id}/images")
     public ResponseEntity<UploadFileResponseWrapper> uploadImage(@PathVariable Long id,
                                                                  @NotNull(message = "The given image must not be null")
-                                                                 @RequestParam("image") MultipartFile image) throws IOException {
+                                                                 @RequestParam("image") MultipartFile image) {
         return ResponseEntity.ok(bookService.uploadImage(id, image));
     }
 
     @PostMapping("/upload-csv-file")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> uploadBooksFromCSV(@NotEmpty(message = "The given file must not be null or empty")
-                                                @RequestParam("file") MultipartFile file) throws IOException {
-
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<?> uploadBooksFromCSV(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "File must not be empty"));
+        }
         Integer count = bookService.uploadBooksFromCsv(file);
         return ResponseEntity.ok().body(Map.of("message", "File is uploaded successfully. Saved " + count + " books."));
     }
 
-    @PutMapping(path = "/{id}/rate")
-    public ResponseEntity<?> rateBook(@ModelAttribute(SESSION_USER_KEY) SessionUser sessionUser, @PathVariable Long id, @RequestParam("rate") Integer rate) {
-        bookService.rateBook(sessionUser.getUsername(), id, rate);
+    @PostMapping("/upload-rates")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<?> uploadBookRatesFromCSV(@RequestParam("file") MultipartFile file) throws IOException {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "File must not be empty"));
+        }
+        Integer count = bookService.uploadBooksRatesFromCsv(file);
+        return ResponseEntity.ok().body(Map.of("message", "File is uploaded successfully. Rated " + count + " books."));
+    }
+
+    @PutMapping(path = "/{bookId}/rate")
+    public ResponseEntity<?> rateBook(@ModelAttribute(SESSION_USER_KEY) SessionUser sessionUser,
+                                      @PathVariable("bookId") Long id,
+                                      @RequestParam("rate") Integer rate) {
+        bookService.rateBook(sessionUser.getId(), id, rate);
         return ResponseEntity.ok().body(Map.of("message", "Book is rated successfully."));
 
     }
 
 
-    // TODO: 23-Apr-21 Check why the SessionUser.getId() returns the given bookId
-    @PutMapping(path = "/{id}/favorite")
-    public ResponseEntity<?> updateFavoriteBooks(@ModelAttribute(SESSION_USER_KEY) SessionUser sessionUser,@PathVariable Long id,
-                                                       @RequestParam(name = "function", defaultValue = "add") String function) {
+    @PutMapping(path = "/{bookId}/favorite")
+    public ResponseEntity<?> updateFavoriteBooks(@ModelAttribute(SESSION_USER_KEY) SessionUser sessionUser,
+                                                 @PathVariable Long bookId,
+                                                 @RequestParam(name = "function", defaultValue = "add") String function) {
 
-        String result = bookService.updateFavoriteBooks(sessionUser.getUsername(),id, function);
+        String result = bookService.updateFavoriteBooks(sessionUser.getId(), bookId, function);
         return ResponseEntity.ok().body(Map.of("message", result));
     }
+
+    @GetMapping(path = "/{id}/rates")
+    public ResponseEntity<?> getBookRates(@PathVariable Long id) {
+        return ResponseEntity.ok().body(Map.of("message", bookService.getRates(id)));
+    }
+
 }

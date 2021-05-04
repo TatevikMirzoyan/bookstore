@@ -7,6 +7,8 @@ import bookstore.api.bookstore.persistence.repository.FileRepository;
 import bookstore.api.bookstore.service.dto.BookDto;
 import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -32,6 +34,7 @@ public class FileService {
     private final String uploadDir;
     private final Path fileStorageLocation;
     private final FileRepository fileRepository;
+    private final Logger logger = LoggerFactory.getLogger(FileService.class);
 
     public FileService(@Value("${file.upload-dir}") String uploadDir, FileRepository fileRepository) {
         this.uploadDir = uploadDir;
@@ -82,7 +85,7 @@ public class FileService {
     public FileEntity uploadImageFromURL(String path) throws IOException, URISyntaxException {
         URL url = new URL(path);
         String extension = FilenameUtils.getExtension(path);
-        String fileName = "image_" + System.currentTimeMillis() + "." + extension;
+        String fileName = FilenameUtils.getBaseName(path) + "_" + System.currentTimeMillis();
         String targetLocation = this.fileStorageLocation.normalize().toString() + "\\" + fileName;
         File newFile = new File(targetLocation);
         try (InputStream is = url.openStream();
@@ -93,11 +96,11 @@ public class FileService {
                 os.write(buffer, 0, bytesCount);
             }
         } catch (MalformedURLException e) {
-            System.out.println("MalformedURLException :-   " + e.getMessage());
+            logger.warn("MalformedURLException " + e.getMessage());
         } catch (FileNotFoundException e) {
-            System.out.println("FileNotFoundException :-   " + e.getMessage());
+            logger.warn("FileNotFoundException " + e.getMessage());
         } catch (IOException e) {
-            System.out.println("IOException :-   " + e.getMessage());
+            logger.warn("IOException " + e.getMessage());
         }
         FileEntity newDoc = new FileEntity();
         newDoc.setExtension(extension);

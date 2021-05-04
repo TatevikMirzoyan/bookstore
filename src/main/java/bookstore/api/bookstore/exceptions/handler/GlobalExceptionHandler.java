@@ -1,6 +1,9 @@
-package bookstore.api.bookstore.exceptions;
+package bookstore.api.bookstore.exceptions.handler;
 
 
+import bookstore.api.bookstore.exceptions.FileStorageException;
+import bookstore.api.bookstore.exceptions.RecordNotFoundException;
+import bookstore.api.bookstore.service.model.wrapper.ErrorResponseWrapper;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -9,7 +12,6 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
@@ -33,7 +35,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public final ResponseEntity<Object> handleRecordNotFoundException(RecordNotFoundException ex, WebRequest request) {
         List<String> details = new ArrayList<>();
         details.add(ex.getLocalizedMessage());
-        ErrorResponse error = new ErrorResponse("Record Not Found", details);
+        ErrorResponseWrapper error = new ErrorResponseWrapper("Record Not Found", details);
         return new ResponseEntity(error, HttpStatus.NOT_FOUND);
     }
 
@@ -41,7 +43,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public final ResponseEntity<Object> handleFileStorageException(FileStorageException ex, WebRequest request) {
         List<String> details = new ArrayList<>();
         details.add(ex.getLocalizedMessage());
-        ErrorResponse error = new ErrorResponse("File Storage Exception", details);
+        ErrorResponseWrapper error = new ErrorResponseWrapper("File Storage Exception", details);
         return new ResponseEntity(error, HttpStatus.EXPECTATION_FAILED);
     }
 
@@ -51,7 +53,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         for (ObjectError error : ex.getBindingResult().getAllErrors()) {
             details.add(error.getDefaultMessage());
         }
-        ErrorResponse error = new ErrorResponse("Validation Failed", details);
+        ErrorResponseWrapper error = new ErrorResponseWrapper("Validation Failed", details);
         return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
     }
 
@@ -59,7 +61,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleValidationException(ValidationException ex, WebRequest request) {
         List<String> details = new ArrayList<>();
         details.add(ex.getLocalizedMessage());
-        ErrorResponse error = new ErrorResponse("Validation Failed", details);
+        ErrorResponseWrapper error = new ErrorResponseWrapper("Validation Failed", details);
         return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
     }
 
@@ -67,7 +69,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleBadRequest( DataIntegrityViolationException ex, WebRequest request) {
         List<String> details = new ArrayList<>();
         details.add(ex.getLocalizedMessage());
-        ErrorResponse error = new ErrorResponse("Validation Failed", details);
+        ErrorResponseWrapper error = new ErrorResponseWrapper("Validation Failed", details);
         return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
     }
 
@@ -78,16 +80,9 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
             details.add(violation.getRootBeanClass().getName() + " " + violation.getPropertyPath() + ": " + violation.getMessage());
         }
-         ErrorResponse error = new ErrorResponse( ex.getLocalizedMessage(), details);
+         ErrorResponseWrapper error = new ErrorResponseWrapper( ex.getLocalizedMessage(), details);
         return new ResponseEntity(error, HttpStatus.BAD_REQUEST);
 
     }
 
-//    @ExceptionHandler(Exception.class)
-//    public final ResponseEntity<Object> handleAllExceptions(Exception ex, WebRequest request) {
-//        List<String> details = new ArrayList<>();
-//        details.add(ex.getLocalizedMessage());
-//        ErrorResponse error = new ErrorResponse("Server Error", details);
-//        return new ResponseEntity(error, HttpStatus.INTERNAL_SERVER_ERROR);
-//    }
 }

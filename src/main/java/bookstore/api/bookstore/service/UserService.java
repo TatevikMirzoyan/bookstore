@@ -148,7 +148,6 @@ public class UserService {
         List<UserEntity> entities = users.stream()
                 .map((temp) -> modelMapper.map(temp, UserEntity.class))
                 .collect(Collectors.toList());
-
         List<String> usernameList = userRepository.findAllUsernames();
         List<UserEntity> userEntities = new ArrayList<>();
         for (UserEntity user : entities) {
@@ -197,4 +196,3 @@ public class UserService {
     }
 
 }
-// Check hibernate logs for my new added and your query

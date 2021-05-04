@@ -48,7 +48,7 @@ public class JwtUserDetailService implements UserDetailsService {
 
     private static Collection<? extends GrantedAuthority> getAuthorities(UserEntity user) {
         return user.getRoles().stream()
-                .map((roleEntity -> "ROLE_" + roleEntity.getRoleName()))
+                .map((RoleEntity::getRoleName))
                 .collect(Collectors.toList()).stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());

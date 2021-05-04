@@ -1,8 +1,6 @@
 package bookstore.api.bookstore.persistence.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.Objects;
@@ -13,7 +11,8 @@ import java.util.Objects;
  */
 @Entity
 @Table(name = "publisher")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class PublisherEntity {
@@ -38,5 +37,13 @@ public class PublisherEntity {
     @Override
     public int hashCode() {
         return Objects.hash(name);
+    }
+
+    @Override
+    public String toString() {
+        return "PublisherEntity{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                '}';
     }
 }
